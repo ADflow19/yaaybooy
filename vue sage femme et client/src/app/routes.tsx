@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, Navigate } from "react-router";
 import { RootLayout } from "./layouts/RootLayout";
 import { HomePage } from "./pages/HomePage";
 import { IoTMeasurePage } from "./pages/IoTMeasurePage";
@@ -14,11 +14,23 @@ import { PatientRecordPage } from "./pages/midwife/PatientRecordPage";
 import { MidwifeCalendarPage } from "./pages/midwife/MidwifeCalendarPage";
 import { MidwifeAlertsPage } from "./pages/midwife/MidwifeAlertsPage";
 import { MidwifeProfilePage } from "./pages/midwife/MidwifeProfilePage";
+import { LoginPage } from "./pages/LoginPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { RequireAuth } from "./components/RequireAuth";
 
 export const router = createBrowserRouter([
+  // ── Auth (pas de layout) ──────────────────────────────────────────────────
+  { path: "/login", Component: LoginPage },
+  { path: "/register", Component: RegisterPage },
+
+  // ── Espace patiente ───────────────────────────────────────────────────────
   {
     path: "/",
-    Component: RootLayout,
+    element: (
+      <RequireAuth role="patiente">
+        <RootLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, Component: HomePage },
       { path: "mesure", Component: IoTMeasurePage },
@@ -29,9 +41,15 @@ export const router = createBrowserRouter([
       { path: "profil", Component: ProfilePage },
     ],
   },
+
+  // ── Espace sage-femme ─────────────────────────────────────────────────────
   {
     path: "/sage-femme",
-    Component: MidwifeLayout,
+    element: (
+      <RequireAuth role="sage_femme">
+        <MidwifeLayout />
+      </RequireAuth>
+    ),
     children: [
       { index: true, Component: MidwifeDashboard },
       { path: "patientes", Component: PatientListPage },
@@ -41,4 +59,7 @@ export const router = createBrowserRouter([
       { path: "profil", Component: MidwifeProfilePage },
     ],
   },
+
+  // ── Fallback ──────────────────────────────────────────────────────────────
+  { path: "*", element: <Navigate to="/" replace /> },
 ]);

@@ -1,0 +1,25 @@
+# Ce fichier est fusionné automatiquement par Docker Compose en développement.
+# Il surcharge docker-compose.yml pour activer le hot-reload et exposer la DB.
+# Ne PAS utiliser en production (ignoré sur Railway/Render qui n'ont pas ce fichier).
+
+services:
+  api:
+    # Construire depuis le Dockerfile standard — pas de rebuild à chaque changement
+    build:
+      context: .
+      target: builder        # s'arrête au stage builder qui a déjà les deps installées
+    # Monter le code source en live : toute modification locale est visible immédiatement
+    volumes:
+      - .:/app
+      - /app/__pycache__     # exclure le cache Python du montage pour éviter les conflits
+    # Surcharger la commande prod : uvicorn avec --reload activé
+    command: >
+      sh -c "alembic upgrade head &&
+             uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-dir /app"
+    environment:
+      # Surcharge DATABASE_URL pour pointer vers le conteneur db local
+      DATABASE_URL: postgresql://yaaybooy:yaaybooy@db:5432/yaaybooy
+      # Active les logs SQL pour le debug (retirer si trop verbeux)
+      SQLALCHEMY_ECHO: "true"
+    # Pas de restart en dev — on veut voir les crashs immédiatement
+    restart: "no"

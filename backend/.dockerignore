@@ -1,0 +1,10 @@
+.env
+__pycache__
+*.pyc
+*.pyo
+.git
+.gitignore
+*.md
+docker-compose.override.yml
+alembic/versions/*.py
+!alembic/versions/.gitkeep

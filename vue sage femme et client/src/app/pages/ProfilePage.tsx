@@ -1,9 +1,34 @@
 import { Header } from "../components/Header";
 import { Card } from "../components/Card";
-import { User, Phone, MapPin, Calendar, Languages, Bell, Moon, Download, ChevronRight, Settings } from "lucide-react";
+import { User, Phone, MapPin, Calendar, Languages, Bell, Download, ChevronRight, Settings, LogOut } from "lucide-react";
 import { motion } from "motion/react";
+import { useNavigate } from "react-router";
+import { useApiCall } from "../../hooks/useApiCall";
+import { patientService } from "../../api/patientService";
+import { measurementService } from "../../api/measurementService";
+import { useAuth } from "../../context/AuthContext";
 
 export function ProfilePage() {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+  const { data: patient } = useApiCall(() => patientService.getMe());
+  const { data: measurements } = useApiCall(() => measurementService.list());
+
+  const trimester = patient
+    ? patient.weeks <= 13 ? "1er Trimestre"
+    : patient.weeks <= 26 ? "2ème Trimestre"
+    : "3ème Trimestre"
+    : "2ème Trimestre";
+
+  const latestBp   = measurements?.find((m) => m.type === "blood-pressure");
+  const latestHr   = measurements?.find((m) => m.type === "heart-rate");
+  const latestTemp = measurements?.find((m) => m.type === "temperature");
+
+  function handleLogout() {
+    logout();
+    navigate("/login", { replace: true });
+  }
+
   return (
     <div className="pb-6">
       <Header greeting="Mon" name="Profil" avatar="👩🏾" />
@@ -19,12 +44,14 @@ export function ProfilePage() {
               👩🏾
             </div>
             <h2 className="font-['Playfair_Display'] text-2xl text-gray-800 mb-1">
-              Aminata Diallo
+              {patient?.name ?? user?.email ?? "—"}
             </h2>
-            <p className="text-sm text-gray-600 mb-3">24 semaines de grossesse</p>
+            <p className="text-sm text-gray-600 mb-3">
+              {patient ? `${patient.weeks} semaines de grossesse` : "Profil à compléter"}
+            </p>
             <div className="flex items-center justify-center gap-2">
               <span className="text-xs bg-[#C96B4B]/10 text-[#C96B4B] px-3 py-1 rounded-full font-semibold">
-                2ème Trimestre
+                {trimester}
               </span>
             </div>
           </Card>
@@ -47,7 +74,7 @@ export function ProfilePage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Nom complet</div>
-                  <div className="text-sm font-semibold text-gray-800">Aminata Diallo</div>
+                  <div className="text-sm font-semibold text-gray-800">{patient?.name ?? "—"}</div>
                 </div>
               </div>
               <ChevronRight size={18} className="text-gray-400" />
@@ -60,7 +87,7 @@ export function ProfilePage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Téléphone</div>
-                  <div className="text-sm font-semibold text-gray-800">+221 77 123 45 67</div>
+                  <div className="text-sm font-semibold text-gray-800">{patient?.phone ?? "Non renseigné"}</div>
                 </div>
               </div>
               <ChevronRight size={18} className="text-gray-400" />
@@ -73,7 +100,7 @@ export function ProfilePage() {
                 </div>
                 <div>
                   <div className="text-xs text-gray-500">Adresse</div>
-                  <div className="text-sm font-semibold text-gray-800">Dalifort, Dakar</div>
+                  <div className="text-sm font-semibold text-gray-800">{patient?.village ?? "Non renseigné"}</div>
                 </div>
               </div>
               <ChevronRight size={18} className="text-gray-400" />
