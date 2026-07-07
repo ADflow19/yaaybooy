@@ -24,9 +24,9 @@ export function PregnancyPage() {
     : "";
 
   return (
-    <div className="pb-6">
+    <div className="pb-8">
       <Header greeting="Suivi de Grossesse" name="" avatar="🤰🏾" />
-      <div className="px-6 -mt-6 space-y-6">
+      <div className="max-w-4xl mx-auto px-8 mt-6 space-y-6">
 
         {loading && (
           <div className="space-y-4 animate-pulse">

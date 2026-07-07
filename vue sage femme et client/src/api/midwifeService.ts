@@ -82,6 +82,16 @@ export const midwifeService = {
       .then((r) => r.data);
   },
 
+  /** POST /api/midwife/patients/{patientId}/appointments — crée un RDV pour une patiente. */
+  createMidwifeAppointment(
+    patientId: number,
+    payload: { scheduled_at: string; type?: string; note?: string; duration?: number; weeks?: number }
+  ): Promise<AppointmentRead> {
+    return apiClient
+      .post<AppointmentRead>(`/api/midwife/patients/${patientId}/appointments`, payload)
+      .then((r) => r.data);
+  },
+
   // ── Notes cliniques ──────────────────────────────────────────────────────────
 
   /** GET /api/midwife/patients/{id}/notes — notes cliniques d'une patiente. */

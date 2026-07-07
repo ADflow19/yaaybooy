@@ -1,8 +1,9 @@
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Header } from "../components/Header";
 import { Card } from "../components/Card";
 import { ProgressCircle } from "../components/ProgressCircle";
-import { Calendar, Lightbulb, Activity, Heart, Moon, Stethoscope, Baby, Scale, Bell } from "lucide-react";
+import { Calendar, Lightbulb, Activity, Heart, Moon, Stethoscope, Baby, Scale, Bell, Plus } from "lucide-react";
 import { motion } from "motion/react";
 import { useApiCall } from "../../hooks/useApiCall";
 import { patientService } from "../../api/patientService";
@@ -36,22 +37,94 @@ export function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
 
-  const { data: patient, loading: pLoading } = useApiCall(() => patientService.getMe());
-  const { data: appointments, loading: aLoading } = useApiCall(() =>
-    appointmentService.list(true)
-  );
+  const [creating, setCreating] = useState(false);
+  const [createErr, setCreateErr] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", weeks: "", dpa: "" });
+
+  const { data: patient, loading: pLoading, error: pError, refetch } = useApiCall(() => patientService.getMe());
+  const { data: appointments, loading: aLoading } = useApiCall(() => appointmentService.list(true));
 
   const loading = pLoading || aLoading;
+  const profileMissing = !pLoading && (pError !== null || patient === null);
   const nextAppt = appointments?.[0] ?? null;
   const name = patient?.name?.split(" ")[0] ?? user?.email?.split("@")[0] ?? "Aminata";
 
+  async function handleCreateProfile(e: FormEvent) {
+    e.preventDefault();
+    setCreateErr(null);
+    setCreating(true);
+    try {
+      await patientService.createMe({
+        name: form.name,
+        weeks: form.weeks ? Number(form.weeks) : 0,
+        dpa: form.dpa || undefined,
+        risk: "normal",
+        gravida: 1,
+        para: 0,
+      } as Parameters<typeof patientService.createMe>[0]);
+      refetch();
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setCreateErr(typeof detail === "string" ? detail : "Erreur lors de la création");
+    } finally {
+      setCreating(false);
+    }
+  }
+
   if (loading) return <><Header name={name} /><PageSkeleton /></>;
 
-  return (
-    <div className="pb-6">
-      <Header name={name} />
+  // ── Onboarding : profil pas encore créé ──────────────────────────────────
+  if (profileMissing) {
+    return (
+      <div className="pb-6">
+        <Header greeting="Bienvenue" name={user?.email?.split("@")[0] ?? ""} />
+        <div className="px-6 -mt-6">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            <Card className="py-6">
+              <div className="text-center mb-5">
+                <div className="text-4xl mb-2">🤰🏾</div>
+                <h2 className="font-['Playfair_Display'] text-xl text-gray-800 mb-1">Créer votre profil</h2>
+                <p className="text-sm text-gray-500">Pour commencer, renseignez quelques informations</p>
+              </div>
+              <form onSubmit={handleCreateProfile} className="space-y-3">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-600 mb-1">Nom complet *</label>
+                  <input required type="text" placeholder="Aminata Diallo"
+                    value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    className="w-full px-4 py-2.5 text-sm bg-[#FFF9F5] border border-[#F2A7A7]/30 rounded-xl outline-none focus:ring-2 focus:ring-[#C96B4B]/20 focus:border-[#C96B4B]" />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Semaines (SA)</label>
+                    <input type="number" min="0" max="45" placeholder="24"
+                      value={form.weeks} onChange={(e) => setForm((f) => ({ ...f, weeks: e.target.value }))}
+                      className="w-full px-4 py-2.5 text-sm bg-[#FFF9F5] border border-[#F2A7A7]/30 rounded-xl outline-none focus:ring-2 focus:ring-[#C96B4B]/20 focus:border-[#C96B4B]" />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-gray-600 mb-1">Date prévue (DPA)</label>
+                    <input type="date"
+                      value={form.dpa} onChange={(e) => setForm((f) => ({ ...f, dpa: e.target.value }))}
+                      className="w-full px-4 py-2.5 text-sm bg-[#FFF9F5] border border-[#F2A7A7]/30 rounded-xl outline-none focus:ring-2 focus:ring-[#C96B4B]/20 focus:border-[#C96B4B]" />
+                  </div>
+                </div>
+                {createErr && <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-xl">{createErr}</p>}
+                <button type="submit" disabled={creating}
+                  className="w-full bg-gradient-to-r from-[#C96B4B] to-[#B07590] text-white py-3 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+                  <Plus size={16} />
+                  {creating ? "Enregistrement…" : "Créer mon profil"}
+                </button>
+              </form>
+            </Card>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
 
-      <div className="px-6 -mt-6 space-y-6">
+  return (
+    <div className="pb-8">
+      <Header name={name} />
+      <div className="max-w-4xl mx-auto px-8 mt-6 space-y-6">
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <Card className="flex flex-col items-center py-8">
             <h3 className="text-lg font-['Playfair_Display'] mb-4 text-gray-700">Votre Grossesse</h3>

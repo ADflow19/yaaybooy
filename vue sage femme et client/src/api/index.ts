@@ -6,4 +6,5 @@ export { alertService } from "./alertService";
 export { appointmentService } from "./appointmentService";
 export { babyJournalService } from "./babyJournalService";
 export { midwifeService } from "./midwifeService";
+export { chatbotService } from "./chatbotService";
 export type * from "./types";
