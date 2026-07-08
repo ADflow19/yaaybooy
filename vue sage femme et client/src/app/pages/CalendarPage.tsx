@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
 import { Header } from "../components/Header";
 import { Card } from "../components/Card";
-import { Calendar, Clock, MapPin, Plus, ChevronRight, X } from "lucide-react";
+import { Calendar, Clock, MapPin, Plus, ChevronRight, X, Video } from "lucide-react";
 import { motion } from "motion/react";
 import { useApiCall } from "../../hooks/useApiCall";
 import { appointmentService } from "../../api/appointmentService";
+import { videoCallService } from "../../api/videoCallService";
 import type { AppointmentRead, AppointmentType } from "../../api/types";
+import { VideoCallModal } from "../components/VideoCallModal";
 
 const typeLabel: Record<string, string> = {
   routine: "Consultation prénatale",

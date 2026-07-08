@@ -27,6 +27,155 @@ const BLOOD_TYPES = ["A+","A-","B+","B-","AB+","AB-","O+","O-"];
 
 const tabs = ["Résumé", "Profil", "Constantes", "Consultations", "Documents"];
 
+// ── Onglet Profil : formulaire de modification par la sage-femme ──────────────
+function ProfileEditTab({
+  dossier,
+  patientId,
+  onSaved,
+}: {
+  dossier: { name: string; age: number | null; weeks: number; phone: string | null; village: string | null; blood_type: string | null; gravida: number; para: number; risk: string; dpa: string | null };
+  patientId: number;
+  onSaved: () => void;
+}) {
+  const [form, setForm] = useState({
+    name:       dossier.name       ?? "",
+    age:        dossier.age        != null ? String(dossier.age)   : "",
+    weeks:      dossier.weeks      != null ? String(dossier.weeks) : "",
+    phone:      dossier.phone      ?? "",
+    village:    dossier.village    ?? "",
+    blood_type: dossier.blood_type ?? "",
+    gravida:    String(dossier.gravida ?? 0),
+    para:       String(dossier.para    ?? 0),
+    risk:       dossier.risk       ?? "normal",
+    dpa:        dossier.dpa        ?? "",
+  });
+  const [saving, setSaving]  = useState(false);
+  const [saved,  setSaved]   = useState(false);
+  const [error,  setError]   = useState<string | null>(null);
+
+  function set(field: string, value: string) {
+    setForm((f) => ({ ...f, [field]: value }));
+    setSaved(false);
+  }
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const payload: PatientUpdate = {
+        name:       form.name       || undefined,
+        age:        form.age        ? Number(form.age)    : undefined,
+        weeks:      form.weeks      ? Number(form.weeks)  : undefined,
+        phone:      form.phone      || undefined,
+        village:    form.village    || undefined,
+        blood_type: form.blood_type || undefined,
+        gravida:    form.gravida    ? Number(form.gravida): undefined,
+        para:       form.para       ? Number(form.para)   : undefined,
+        risk:       form.risk as PatientUpdate["risk"],
+        dpa:        form.dpa        || undefined,
+      };
+      await midwifeService.updatePatient(patientId, payload);
+      setSaved(true);
+      onSaved();
+    } catch (err: unknown) {
+      const detail = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "Erreur lors de la mise à jour");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const inputCls = "w-full px-3 py-2 text-sm bg-white border border-border rounded-xl outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all";
+  const labelCls = "block text-xs font-semibold text-muted-foreground mb-1";
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground font-serif flex items-center gap-2">
+          <Edit2 size={14} className="text-primary" /> Informations administratives
+        </h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Nom complet *</label>
+            <input required type="text" value={form.name} onChange={(e) => set("name", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Téléphone</label>
+            <input type="tel" value={form.phone} onChange={(e) => set("phone", e.target.value)} placeholder="+221 77 …" className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Village / Localité</label>
+            <input type="text" value={form.village} onChange={(e) => set("village", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Âge</label>
+            <input type="number" min="10" max="60" value={form.age} onChange={(e) => set("age", e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-border p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground font-serif">Données médicales</h2>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelCls}>Semaines d'aménorrhée (SA)</label>
+            <input type="number" min="0" max="45" value={form.weeks} onChange={(e) => set("weeks", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Date prévue d'accouchement (DPA)</label>
+            <input type="date" value={form.dpa} onChange={(e) => set("dpa", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Groupe sanguin</label>
+            <select value={form.blood_type} onChange={(e) => set("blood_type", e.target.value)} className={inputCls}>
+              <option value="">— Non renseigné —</option>
+              {BLOOD_TYPES.map((g) => <option key={g} value={g}>{g}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Niveau de risque</label>
+            <select value={form.risk} onChange={(e) => set("risk", e.target.value)} className={inputCls}>
+              <option value="normal">Normal</option>
+              <option value="watch">À surveiller</option>
+              <option value="high">Risque élevé</option>
+            </select>
+          </div>
+          <div>
+            <label className={labelCls}>Gestité (nb de grossesses)</label>
+            <input type="number" min="0" value={form.gravida} onChange={(e) => set("gravida", e.target.value)} className={inputCls} />
+          </div>
+          <div>
+            <label className={labelCls}>Parité (nb d'accouchements)</label>
+            <input type="number" min="0" value={form.para} onChange={(e) => set("para", e.target.value)} className={inputCls} />
+          </div>
+        </div>
+      </div>
+
+      {error && (
+        <p className="text-xs text-destructive bg-destructive/5 border border-destructive/20 px-4 py-2.5 rounded-xl">{error}</p>
+      )}
+
+      {saved && (
+        <p className="text-xs text-green-700 bg-green-50 border border-green-200 px-4 py-2.5 rounded-xl">
+          ✓ Profil mis à jour avec succès
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={saving}
+        className="w-full flex items-center justify-center gap-2 bg-primary text-white py-3 rounded-xl font-semibold text-sm hover:bg-primary/90 transition-colors disabled:opacity-60"
+      >
+        <Save size={15} />
+        {saving ? "Enregistrement…" : "Enregistrer les modifications"}
+      </button>
+    </form>
+  );
+}
+
 export function PatientRecordPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -287,6 +436,15 @@ export function PatientRecordPage() {
               )}
             </div>
           </>
+        )}
+
+        {/* ── Profil — modification par la sage-femme ─────────────── */}
+        {activeTab === "Profil" && (
+          <ProfileEditTab
+            dossier={dossier}
+            patientId={patientId}
+            onSaved={refetch}
+          />
         )}
 
         {/* ── Constantes ─────────────────────────────────────────── */}

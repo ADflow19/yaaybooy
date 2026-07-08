@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import settings
 from app.api.routes import auth, patient, measurements, alerts, appointments, baby_journal, midwife
 from app.api.routes.chatbot import router as chatbot_router
+from app.api.routes.calls import router as calls_router
 
 app = FastAPI(
     title="Yaaybooy API",
@@ -29,6 +30,7 @@ app.include_router(appointments.router)
 app.include_router(baby_journal.router)
 app.include_router(midwife.router)
 app.include_router(chatbot_router)
+app.include_router(calls_router)
 
 
 @app.get("/", tags=["health"])

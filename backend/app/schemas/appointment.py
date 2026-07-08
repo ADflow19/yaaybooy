@@ -72,5 +72,6 @@ class AppointmentRead(AppointmentBase):
     id: int
     patient_id: int
     midwife_id: Optional[int] = None
+    jitsi_room_name: Optional[str] = None   # présent si un appel vidéo a été démarré
 
     model_config = {"from_attributes": True}

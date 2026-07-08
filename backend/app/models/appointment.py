@@ -35,6 +35,8 @@ class Appointment(Base):
     )
     weeks: Mapped[Optional[int]] = mapped_column(default=None)
     note: Mapped[Optional[str]] = mapped_column(Text, default=None)
+    # Room Jitsi générée lors du démarrage d'un appel vidéo
+    jitsi_room_name: Mapped[Optional[str]] = mapped_column(String(128), default=None, unique=True)
 
     patient: Mapped["Patient"] = relationship(
         "Patient", back_populates="appointments", foreign_keys=[patient_id]
