@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
   ArrowLeft, Phone, MessageCircle, AlertTriangle,
   Heart, Activity, Droplets, Scale, FileText,
   CalendarDays, Plus, ChevronDown, Thermometer, Stethoscope,
+  Edit2, X, Save,
 } from "lucide-react";
 import {
   LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer,
@@ -11,9 +12,20 @@ import {
 } from "recharts";
 import { useApiCall } from "../../../hooks/useApiCall";
 import { midwifeService } from "../../../api/midwifeService";
-import type { MeasurementRead, ConsultationCreate } from "../../../api/types";
+import type { MeasurementRead, ConsultationCreate, PatientUpdate } from "../../../api/types";
 
-const tabs = ["Résumé", "Constantes", "Consultations", "Documents"];
+// ── Labels lisibles pour les types de mesures ─────────────────────────────────
+const MEASUREMENT_LABELS: Record<string, string> = {
+  "blood-pressure": "Tension artérielle",
+  "heart-rate":     "Rythme cardiaque",
+  "temperature":    "Température",
+  "baby-movements": "Mouvements fœtaux",
+};
+
+// ── Groupes sanguins disponibles ──────────────────────────────────────────────
+const BLOOD_TYPES = ["A+","A-","B+","B-","AB+","AB-","O+","O-"];
+
+const tabs = ["Résumé", "Profil", "Constantes", "Consultations", "Documents"];
 
 export function PatientRecordPage() {
   const { id } = useParams<{ id: string }>();
@@ -180,7 +192,14 @@ export function PatientRecordPage() {
 
             {/* Quick vitals */}
             <div>
-              <h2 className="text-sm font-semibold text-foreground font-serif mb-3">Dernières constantes</h2>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold text-foreground font-serif">Dernières constantes</h2>
+                {dossier.measurements.length === 0 && (
+                  <span className="text-[10px] text-amber-600 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-full">
+                    Aucune mesure partagée
+                  </span>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {vitals.map((v) => {
                   const abnormal = v.m?.status === "alert";
@@ -190,8 +209,8 @@ export function PatientRecordPage() {
                         <v.icon size={13} className={abnormal ? "text-destructive" : "text-muted-foreground"} />
                         <span className="text-[10px] text-muted-foreground">{v.label}</span>
                       </div>
-                      <p className={`text-base font-serif font-bold ${abnormal ? "text-destructive" : "text-foreground"}`}>
-                        {v.m?.value ?? "—"}
+                      <p className={`text-base font-serif font-bold ${abnormal ? "text-destructive" : v.m ? "text-foreground" : "text-muted-foreground"}`}>
+                        {v.m?.value ?? <span className="text-xs font-normal">Non partagé</span>}
                       </p>
                     </div>
                   );
@@ -214,10 +233,13 @@ export function PatientRecordPage() {
               ))}
             </div>
 
-            {/* BP chart */}
-            {bpData.length > 1 && (
+            {/* BP chart — affiché dès qu'il y a au moins 1 mesure */}
+            {bpData.length >= 1 && (
               <div className="bg-white rounded-2xl border border-border p-5">
-                <h2 className="text-sm font-semibold text-foreground font-serif mb-4">Évolution tension artérielle</h2>
+                <h2 className="text-sm font-semibold text-foreground font-serif mb-4">
+                  Évolution tension artérielle
+                  {bpData.length === 1 && <span className="text-[10px] text-muted-foreground font-normal ml-2">(1 mesure)</span>}
+                </h2>
                 <ResponsiveContainer width="100%" height={160}>
                   <LineChart data={bpData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#F2A7A7" strokeOpacity={0.3} />
@@ -271,15 +293,22 @@ export function PatientRecordPage() {
         {activeTab === "Constantes" && (
           <div className="space-y-3">
             {dossier.measurements.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-border p-8 text-center text-sm text-muted-foreground">
-                Aucune mesure partagée par la patiente
+              <div className="bg-amber-50 border border-amber-100 rounded-2xl p-6 text-center space-y-2">
+                <p className="text-sm font-semibold text-amber-700">Aucune mesure enregistrée</p>
+                <p className="text-xs text-amber-600">
+                  La patiente n'a pas encore partagé de mesures IoT avec vous.
+                  Les mesures apparaîtront ici une fois qu'elle les aura enregistrées
+                  et partagées depuis son espace.
+                </p>
               </div>
             ) : (
               dossier.measurements.map((m) => (
                 <div key={m.id} className={`bg-white rounded-2xl border p-4 ${m.status === "alert" ? "border-destructive/20" : "border-border"}`}>
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm font-semibold text-foreground">{m.type}</p>
+                      <p className="text-sm font-semibold text-foreground">
+                        {MEASUREMENT_LABELS[m.type] ?? m.type}
+                      </p>
                       <p className="text-xs text-muted-foreground mt-0.5">
                         {new Date(m.recorded_at).toLocaleString("fr-FR")}
                       </p>

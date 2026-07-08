@@ -9,12 +9,13 @@ import { patientService } from "../../api/patientService";
 import { measurementService } from "../../api/measurementService";
 import { useAuth } from "../../context/AuthContext";
 
-// ── Mini-modal d'édition d'un champ ──────────────────────────────────────────
+// ── Mini-modal d'édition d'un champ (texte, number, date, select) ────────────
 function EditFieldModal({
-  label, value, type = "text",
+  label, value, type = "text", options,
   onSave, onClose,
 }: {
   label: string; value: string; type?: string;
+  options?: string[];
   onSave: (v: string) => Promise<void>; onClose: () => void;
 }) {
   const [val, setVal] = useState(value);
@@ -32,6 +33,8 @@ function EditFieldModal({
     finally { setSaving(false); }
   }
 
+  const inputCls = "w-full px-4 py-2.5 text-sm bg-[#FFF9F5] border border-[#F2A7A7]/30 rounded-xl outline-none focus:ring-2 focus:ring-[#C96B4B]/20 focus:border-[#C96B4B]";
+
   return (
     <div className="fixed inset-0 bg-black/30 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-sm" onClick={(e) => e.stopPropagation()}>
@@ -40,10 +43,17 @@ function EditFieldModal({
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={18} /></button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type={type} value={val} onChange={(e) => setVal(e.target.value)}
-            className="w-full px-4 py-2.5 text-sm bg-[#FFF9F5] border border-[#F2A7A7]/30 rounded-xl outline-none focus:ring-2 focus:ring-[#C96B4B]/20 focus:border-[#C96B4B]"
-          />
+          {options ? (
+            <select value={val} onChange={(e) => setVal(e.target.value)} className={inputCls}>
+              <option value="">— Sélectionner —</option>
+              {options.map((o) => <option key={o} value={o}>{o}</option>)}
+            </select>
+          ) : (
+            <input
+              type={type} value={val} onChange={(e) => setVal(e.target.value)}
+              className={inputCls}
+            />
+          )}
           {err && <p className="text-xs text-red-600 bg-red-50 px-3 py-1.5 rounded-xl">{err}</p>}
           <div className="flex gap-2">
             <button type="button" onClick={onClose} className="flex-1 py-2 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50">Annuler</button>
@@ -65,7 +75,7 @@ export function ProfilePage() {
   const { data: measurements } = useApiCall(() => measurementService.list());
 
   // Quel champ est en cours d'édition
-  const [editing, setEditing] = useState<null | "name" | "phone" | "village" | "dpa">(null);
+  const [editing, setEditing] = useState<null | "name" | "phone" | "village" | "dpa" | "blood_type" | "age" | "weeks">(null);
 
   const trimester = patient
     ? patient.weeks <= 13 ? "1er Trimestre"
@@ -79,17 +89,42 @@ export function ProfilePage() {
 
   function handleLogout() { logout(); navigate("/login", { replace: true }); }
 
-  async function saveField(field: "name" | "phone" | "village" | "dpa", value: string) {
-    await patientService.updateMe({ [field]: value || undefined });
+  async function saveField(
+    field: "name" | "phone" | "village" | "dpa" | "blood_type" | "age" | "weeks",
+    value: string
+  ) {
+    const parsed: Record<string, unknown> = {};
+    if (field === "age" || field === "weeks") {
+      parsed[field] = value ? Number(value) : undefined;
+    } else {
+      parsed[field] = value || undefined;
+    }
+    await patientService.updateMe(parsed as Parameters<typeof patientService.updateMe>[0]);
     refetch();
   }
 
-  // Config des champs éditables
-  const infoFields: { key: "name" | "phone" | "village" | "dpa"; icon: React.ElementType; label: string; value: string; type?: string }[] = [
-    { key: "name",    icon: User,     label: "Nom complet",      value: patient?.name    ?? "",   type: "text"  },
-    { key: "phone",   icon: Phone,    label: "Téléphone",        value: patient?.phone   ?? "",   type: "tel"   },
-    { key: "village", icon: MapPin,   label: "Village / Adresse",value: patient?.village ?? "",   type: "text"  },
-    { key: "dpa",     icon: Calendar, label: "Date prévue (DPA)",value: patient?.dpa     ?? "",   type: "date"  },
+  // Config des champs éditables — inclut blood_type, age, weeks
+  const infoFields: {
+    key: "name" | "phone" | "village" | "dpa" | "blood_type" | "age" | "weeks";
+    icon: React.ElementType;
+    label: string;
+    value: string;
+    type?: string;
+    inputEl?: "select" | "input";
+    options?: string[];
+  }[] = [
+    { key: "name",       icon: User,     label: "Nom complet",        value: patient?.name        ?? "",  type: "text" },
+    { key: "phone",      icon: Phone,    label: "Téléphone",          value: patient?.phone       ?? "",  type: "tel" },
+    { key: "village",    icon: MapPin,   label: "Village / Adresse",  value: patient?.village     ?? "",  type: "text" },
+    { key: "dpa",        icon: Calendar, label: "Date prévue (DPA)",  value: patient?.dpa         ?? "",  type: "date" },
+    {
+      key: "blood_type", icon: User, label: "Groupe sanguin",
+      value: patient?.blood_type ?? "",
+      inputEl: "select",
+      options: ["A+","A-","B+","B-","AB+","AB-","O+","O-"],
+    },
+    { key: "age",   icon: User, label: "Âge",           value: patient?.age   != null ? String(patient.age)   : "", type: "number" },
+    { key: "weeks", icon: User, label: "Semaines (SA)",  value: patient?.weeks != null ? String(patient.weeks) : "", type: "number" },
   ];
 
   return (
@@ -102,6 +137,7 @@ export function ProfilePage() {
           label={infoFields.find((f) => f.key === editing)!.label}
           value={infoFields.find((f) => f.key === editing)!.value}
           type={infoFields.find((f) => f.key === editing)!.type}
+          options={infoFields.find((f) => f.key === editing)!.options}
           onSave={(v) => saveField(editing, v)}
           onClose={() => setEditing(null)}
         />
