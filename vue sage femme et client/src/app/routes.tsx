@@ -7,6 +7,7 @@ import { PregnancyPage } from "./pages/PregnancyPage";
 import { BabyJournalPage } from "./pages/BabyJournalPage";
 import { CalendarPage } from "./pages/CalendarPage";
 import { ProfilePage } from "./pages/ProfilePage";
+import { ContactMidwifePage } from "./pages/ContactMidwifePage";
 import { MidwifeLayout } from "./layouts/MidwifeLayout";
 import { MidwifeDashboard } from "./pages/midwife/MidwifeDashboard";
 import { PatientListPage } from "./pages/midwife/PatientListPage";
@@ -38,6 +39,7 @@ export const router = createBrowserRouter([
       { path: "grossesse", Component: PregnancyPage },
       { path: "bebe", Component: BabyJournalPage },
       { path: "agenda", Component: CalendarPage },
+      { path: "contact", Component: ContactMidwifePage },
       { path: "profil", Component: ProfilePage },
     ],
   },

@@ -1,7 +1,7 @@
 import { NavLink, Outlet } from "react-router";
 import {
   Home, Heart, Calendar, User, Activity,
-  Baby, Bell, Heart as HeartIcon,
+  Baby, Bell, Heart as HeartIcon, Phone,
 } from "lucide-react";
 import { useAuth } from "../../context/AuthContext";
 
@@ -12,6 +12,7 @@ const navItems = [
   { to: "/agenda",    label: "Agenda",   icon: Calendar           },
   { to: "/bebe",      label: "Journal",  icon: Baby               },
   { to: "/alerte",    label: "Alertes",  icon: Bell               },
+  { to: "/contact", label: "Contact SF", icon: Phone              },
   { to: "/profil",    label: "Profil",   icon: User               },
 ];
 

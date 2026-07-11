@@ -13,6 +13,7 @@ import {
 import { useApiCall } from "../../../hooks/useApiCall";
 import { midwifeService } from "../../../api/midwifeService";
 import type { MeasurementRead, ConsultationCreate, PatientUpdate } from "../../../api/types";
+import { QuickVideoCall } from "../../components/QuickVideoCall";
 
 // ── Labels lisibles pour les types de mesures ─────────────────────────────────
 const MEASUREMENT_LABELS: Record<string, string> = {
@@ -304,6 +305,10 @@ export function PatientRecordPage() {
             <button className="w-9 h-9 rounded-xl bg-white border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/30 transition-colors">
               <MessageCircle size={15} />
             </button>
+            <QuickVideoCall
+              patientId={dossier.id}
+              patientName={dossier.name}
+            />
           </div>
         </div>
 
