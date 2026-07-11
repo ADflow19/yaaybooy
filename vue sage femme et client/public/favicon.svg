@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F2A7A7"/>
+      <stop offset="100%" stop-color="#C96B4B"/>
+    </linearGradient>
+    <linearGradient id="heart" x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#fde8e8"/>
+    </linearGradient>
+  </defs>
+  <!-- Fond arrondi -->
+  <rect width="32" height="32" rx="8" fill="url(#bg)"/>
+  <!-- Cœur centré -->
+  <path
+    d="M16 23.5s-9-5.8-9-11.2A5.2 5.2 0 0 1 16 9.3a5.2 5.2 0 0 1 9 3c0 5.4-9 11.2-9 11.2z"
+    fill="url(#heart)"
+    opacity="0.95"
+  />
+</svg>
